@@ -1,0 +1,16 @@
+{
+  "name": "coap-rd",
+  "version": "0.0.1",
+  "description": "CoAP Resource Directory",
+  "repository": "https://github.com/Ell-i/coap-rd.git",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Pekka Nikander",
+  "license": "ISC",
+  "dependencies": {
+    "jsonld-stream": "^1.0.3",
+    "stream-to-array": "^2.3.0"
+  }
+}
