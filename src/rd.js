@@ -56,12 +56,13 @@ function makeEndpoint(incoming) {
     // Convert CoAP options into { name: value } pairs
     const parameters = incoming.options
 	  .filter(o => o.name === 'Uri-Query')
-	  .map(function(o) {
+	  .reduce(function(object, option) {
 	      // Split each option and destructure the resulting array
-	      [name, ...values] = o.value.toString('ASCII').split('=');
+	      [name, ...values] = option.value.toString('ASCII').split('=');
 	      // Create the wanted { name: value } pairs
-	      return { [name]: values.join('=') };
-	  });
+	      Object.assign(object, { [name]: values.join('=') });
+	      return object;
+	  }, {});
 
     // Return a new object from defaultParameters, overwritten by parameters
     return Object.assign({}, defaultParameters, parameters);
