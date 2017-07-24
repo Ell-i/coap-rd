@@ -10,6 +10,7 @@
   "author": "Pekka Nikander",
   "license": "ISC",
   "dependencies": {
+    "coap": "^0.21.0",
     "jsonld-stream": "^1.0.3",
     "stream-to-array": "^2.3.0"
   }
