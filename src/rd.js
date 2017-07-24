@@ -58,7 +58,7 @@ function makeEndpoint(incoming) {
 	  .filter(o => o.name === 'Uri-Query')
 	  .map(function(o) {
 	      // Split each option and destructure the resulting array
-	      [name, ...values] = o.value.split('=');
+	      [name, ...values] = o.value.toString('ASCII').split('=');
 	      // Create the wanted { name: value } pairs
 	      return { [name]: values.join('=') };
 	  });
@@ -91,12 +91,16 @@ const rd = {
 
     _idCounter: 0,
 
+    _endpoints: {},
+
     _registerOrUpdate: function(ep) {
-	if (rd.endpoints[ep.ep]) {
-	    Object.assign(rd.endpoints[ep.ep], ep);
+	if (rd._endpoints[ep.ep]) {
+	    console.log('CoAP RD server: Updating endpoint ' + ep.ep);
+	    Object.assign(rd._endpoints[ep.ep], ep);
 	} else {
+	    console.log('CoAP RD server: Registering endpoint ' + ep.ep);
 	    ep.id = rd._idCounter++;
-	    rd.endpoints[ep.ep] = ep;
+	    rd._endpoints[ep.ep] = ep;
 	}
 
 	return ep.id;
