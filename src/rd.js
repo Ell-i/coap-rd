@@ -165,30 +165,30 @@ const rp = {
 };
 
 const urlRouting = {
-    '/.well-known/core': {
-	'POST'  : rd.registerSimple,  // Sections 5.3.1 and 5.3.2
-	'GET'   : core.returnPaths,
+    '.well-known/core': {
+	POST  : rd.registerSimple,  // Sections 5.3.1 and 5.3.2
+	GET   : core.returnPaths,
     },
-    '/rd/': {
-	'POST'  : rd.update,          // Section 5.4.1
-	'DELETE': rd.remove,          // Section 5.4.2
-	'GET'   : rd.read,            // Section 5.4.3
-	'PATCH' : rd.patch,           // Section 5.4.4
+    'rd/': {
+	POST  : rd.update,          // Section 5.4.1
+	DELETE: rd.remove,          // Section 5.4.2
+	GET   : rd.read,            // Section 5.4.3
+	PATCH : rd.patch,           // Section 5.4.4
     },
-    '/rd': {
-	'POST'  : rd.register         // Section 5.3
+    'rd': {
+	POST  : rd.register,        // Section 5.3
     },
-    '/rd-lookup/ep': {
-	'GET'   : rd.lookup('ep')
+    'rd-lookup/ep': {
+	GET   : rd.lookup('ep'),
     },
-    '/rd-lookup/res': {
-	'GET'   : rd.lookup('res')
+    'rd-lookup/res': {
+	GET   : rd.lookup('res'),
     },
-    '/rd-lookup/d': {
-	'GET'   : rd.lookup('d')
+    'rd-lookup/d': {
+	GET   : rd.lookup('d'),
     },
-    '/rd-lookup': {
-	'GET'   : rd.lookup           // Section 7
+    'rd-lookup': {
+	GET   : rd.lookup,          // Section 7
     },
 };
 
