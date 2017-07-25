@@ -135,13 +135,11 @@ class RD {
     _registerOrUpdate(ep) {
 	if (this._endpoints[ep.ep]) {
 	    Object.assign(this._endpoints[ep.ep], ep);
-	    console.log('CoAP RD: Updated endpoint ' + ep.ep + ": "
-			+ JSON.stringify(this._endpoints[ep.ep]));
+	    console.log('CoAP RD: Updated endpoint ' + ep.ep);
 	} else {
 	    ep.id = this._idCounter++;
 	    this._endpoints[ep.ep] = ep;
-	    console.log('CoAP RD: Registered endpoint ' + ep.ep + ": "
-			+ JSON.stringify(ep));
+	    console.log('CoAP RD: Registered endpoint ' + ep.ep);
 	}
 
 	return ep.id;
@@ -165,8 +163,8 @@ class RD {
 	    // Override any old resources
 	    const promise = makeResources(res);
 	    promise.then(function (value) {
-		ep.resources = value.toString();
-		console.log("Resources = " + ep.resources);
+		ep.resources = value;
+		console.log("Resources = " + JSON.stringify(ep.resources));
 	    });
 	});
 
