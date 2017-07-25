@@ -86,7 +86,7 @@ function makeEndpoint(incoming) {
 	con: {
 	    scheme: 'coap',
 	    family: incoming.rsinfo.family,
-	    host:   incoming.rsinfo.address,
+            host:   incoming.rsinfo.address,
 	    port:   incoming.rsinfo.port,
 	}
     };
@@ -97,79 +97,85 @@ function makeEndpoint(incoming) {
 
 /**
  * Create an Array of EP resources from a payload stream
+ *
+ * XXX: Convert to return a stream, so that we can handle observed cores.
  */
 async function makeResources(incoming) {
     const contentFormat = incoming.options.filter(o => o.name === 'Content-Format')[0].value.toString();
-    switch (contentFormat) {
-    case 'application/link-format':
-	return (await toArray(incoming.pipe(linkFormatJSONstream)));
-    case 'application/link-format+json':
-	return (await toArray(incoming.pipe(ldJSONstream)));
-    case 'application/link-format+cbor':
-	return (await toArray(incoming.pipe(CBORxxx)));
-    default:
-	throw new Error('Unknown content format ' + contentFormat);
+    try {
+	switch (contentFormat) {
+	case 'application/link-format':
+	    return (await toArray(incoming.pipe(new linkFormatJSONstream())));
+	case 'application/link-format+json':
+	    return (await toArray(incoming.pipe(new ldJSONstream())));
+	case 'application/link-format+cbor':
+	    return (await toArray(incoming.pipe(new CBORxxx())));
+	default:
+	    throw new Error('Unknown content format ' + contentFormat);
+	}
+    } catch (err) {
+	console.log("makeResources: Error: " + err);
+	throw err;
     }
 }
 
 /**
  * The actual resource directory
  */
-const RD = function(options) {
-
-    if (! this instanceof RD) {
-	return new RD(options);
+class RD {
+    constructor(options) {
+	this._idCounter = 0;
+	this._endpoints = {};
+	this._options = options || {};
     }
 
-    this._idCounter = 0;
-    this._endpoints = {};
-    this._options = options || {};
-}
+    /**
+     * Register or update an endpoint
+     */
+    _registerOrUpdate(ep) {
+	if (this._endpoints[ep.ep]) {
+	    Object.assign(this._endpoints[ep.ep], ep);
+	    console.log('CoAP RD: Updated endpoint ' + ep.ep + ": "
+			+ JSON.stringify(this._endpoints[ep.ep]));
+	} else {
+	    ep.id = this._idCounter++;
+	    this._endpoints[ep.ep] = ep;
+	    console.log('CoAP RD: Registered endpoint ' + ep.ep + ": "
+			+ JSON.stringify(ep));
+	}
 
-/**
- * Register or update an endpoint
- */
-RD.prototype._registerOrUpdate = function(ep) {
-    if (this._endpoints[ep.ep]) {
-	Object.assign(this._endpoints[ep.ep], ep);
-	console.log('CoAP RD: Updated endpoint ' + ep.ep + ": "
-		    + JSON.stringify(this._endpoints[ep.ep]));
-    } else {
-	ep.id = this._idCounter++;
-	this._endpoints[ep.ep] = ep;
-	console.log('CoAP RD: Registered endpoint ' + ep.ep + ": "
-		    + JSON.stringify(ep));
+	return ep.id;
+    };
+
+    /**
+     * Trigger a /.well-known/core query to a Endpoint
+     */
+    _triggerCoreQuery(ep) {
+	const url = Object.assign(
+	    {
+		method:   'GET',
+		pathname: '/.well-known/core',
+	    },
+	    ep.con
+	);
+
+	const req = coap.request(url);
+
+	req.on('response', function(res) {
+	    // Override any old resources
+	    const promise = makeResources(res);
+	    promise.then(function (value) {
+		ep.resources = value.toString();
+		console.log("Resources = " + ep.resources);
+	    });
+	});
+
+	req.on('error', function(err) {
+	    throw new Error(err);
+	});
+
+	req.end();
     }
-
-    return ep.id;
-};
-
-/**
- * Trigger a /.well-known/core query to a Endpoint
- */
-RD.prototype._triggerCoreQuery = function(ep) {
-    const url = Object.assign(
-	{
-	    method:   'GET',
-	    pathname: '/.well-known/core',
-	    path:     '/.well-known/core', // For URI.serialize
-	},
-	ep.con
-    );
-
-    console.log('CoAP RD: Making a query at ' + URI.serialize(url));
-    const req = coap.request(url);
-
-    req.on('response', function(res) {
-	// Override any old resources
-	ep.resources = makeResources(res);
-    });
-
-    req.on('error', function(err) {
-	throw new Error(err);
-    });
-
-    req.end();
 }
 
 /**
@@ -201,7 +207,8 @@ RD.register = function(incoming, outgoing) {
     const id = this._registerOrUpdate(ep);
 
     outgoing.setOption('Content-Format', 'application/link-format');
-    outgoing.setOption('Location-Path', '/rd/' + id);
+    outgoing.setOption('Location-Path', 'rd');
+    outgoing.setOption('Location-Path', id);
     outgoing.code = 201; // Created
 };
 
