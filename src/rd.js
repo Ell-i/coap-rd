@@ -185,8 +185,12 @@ RD.registerSimple = function(incoming, outgoing) {
     // Handle the old -07 Section 4 functionality with non-empty payload
     // Also see the mailing list discussion in June 13-21, 2016
     if (incoming.payload.length != 0) {
-	ep.resources = makeResources(incoming);
+	const promise = makeResources(incoming);
 	outgoing.code = 201; // Created
+	promise.then(function (value) {
+	    ep.resources = value;
+	    console.log("Resources = " + JSON.stringify(ep.resources));
+	});
     } else {
 	outgoing.code = 204; // Changed
 	this._triggerCoreQuery(ep);
@@ -200,8 +204,12 @@ RD.registerSimple = function(incoming, outgoing) {
  */
 RD.register = function(incoming, outgoing) {
     const ep = makeEndpoint(incoming);
-    ep.resources = makeResources(incoming);
-    console.log("Resources = " + JSON.stringify(ep.resources));
+
+    const promise = makeResources(incoming);
+    promise.then(function (value) {
+	ep.resources = value;
+	console.log("Resources = " + JSON.stringify(ep.resources));
+    });
 
     const id = this._registerOrUpdate(ep);
 
