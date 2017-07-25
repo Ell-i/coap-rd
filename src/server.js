@@ -82,7 +82,7 @@ function listener(request, response) {
 
 exports.startServer = function(XXX) {
     this.server = coap.createServer(serverOptions, listener);
-    this.server.rd = new RD();
+    this.server.rd = new RD();  // Since in `listener` `this` is the CoAP server, not us
     this.server.listen(defaultCoAPport);
     console.log('CoAP RD: listening');
     return this;

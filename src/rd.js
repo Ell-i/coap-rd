@@ -201,6 +201,7 @@ RD.registerSimple = function(incoming, outgoing) {
 RD.register = function(incoming, outgoing) {
     const ep = makeEndpoint(incoming);
     ep.resources = makeResources(incoming);
+    console.log("Resources = " + JSON.stringify(ep.resources));
 
     const id = this._registerOrUpdate(ep);
 
