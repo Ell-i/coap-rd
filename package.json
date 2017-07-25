@@ -2,13 +2,26 @@
   "name": "coap-rd",
   "version": "0.0.1",
   "description": "CoAP Resource Directory",
-  "repository": "https://github.com/Ell-i/coap-rd.git",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "NODE_ENV=test mocha --require ./test/test_helper.js"
   },
-  "author": "Pekka Nikander",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ell-i/coap-rd.git"
+  },
+  "main": "index.js",
+  "author": {
+    "name": "Pekka Nikander",
+    "email": "pekka.nikander@iki.fi"
+  },
+  "bugs": {
+    "url": "https://github.com/Ell-i/coap-rd/issues"
+  },
+  "engines": {
+    "node": ">= 8.0.0"
+  },
   "license": "ISC",
+  "homepage": "https://github.com/Ell-i/coap-rd",
   "dependencies": {
     "coap": "^0.21.0",
     "jsonld-stream": "^1.0.3",
