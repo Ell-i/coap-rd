@@ -113,116 +113,90 @@ async function makeResources(incoming) {
 }
 
 /**
- * The actual resource directory functions
+ * The actual resource directory
  */
-const rd = {
+const RD = function(options) {
 
-    _idCounter: 0,
+    if (! this instanceof RD) {
+	return new RD(options);
+    }
 
-    _endpoints: {},
+    this._idCounter = 0;
+    this._endpoints = {};
+}
 
-    _registerOrUpdate: function(ep) {
-	if (rd._endpoints[ep.ep]) {
-	    Object.assign(rd._endpoints[ep.ep], ep);
-	    console.log('CoAP RD server: Updated endpoint ' + ep.ep + ": "
-			+ JSON.stringify(rd._endpoints[ep.ep]));
-	} else {
-	    ep.id = rd._idCounter++;
-	    rd._endpoints[ep.ep] = ep;
-	    console.log('CoAP RD server: Registered endpoint ' + ep.ep + ": "
-			+ JSON.stringify(ep));
-	}
+/**
+ * Register or update an endpoint
+ */
+RD.prototype._registerOrUpdate = function(ep) {
+    if (this._endpoints[ep.ep]) {
+	Object.assign(this._endpoints[ep.ep], ep);
+	console.log('CoAP RD server: Updated endpoint ' + ep.ep + ": "
+		    + JSON.stringify(this._endpoints[ep.ep]));
+    } else {
+	ep.id = this._idCounter++;
+	this._endpoints[ep.ep] = ep;
+	console.log('CoAP RD server: Registered endpoint ' + ep.ep + ": "
+		    + JSON.stringify(ep));
+    }
 
-	return ep.id;
-    },
-
-    /**
-     * Implementation of Sections 5.3.1 and 5.3.2
-     */
-    registerSimple: function(incoming, outgoing) {
-	const ep = makeEndpoint(incoming);
-
-	// Handle the old -07 Section 4 functionality with non-empty payload
-	// Also see the mailing list discussion in June 13-21, 2016
-	if (incoming.payload.length != 0) {
-	    ep.resources = makeResources(incoming);
-	    outgoing.code = 201; // Created
-	} else {
-	    outgoing.code = 204; // Changed
-	    // XXX triggerQuery(XXX);
-	}
-
-	rd._registerOrUpdate(ep);
-    },
-
-    /**
-     * Implementation of Section 5.3 introduction part
-     */
-    register: function(incoming, outgoing) {
-	const ep = makeEndpoint(incoming);
-	ep.resources = makeResources(incoming);
-
-	const id = rd._registerOrUpdate(ep);
-
-	outgoing.setOption('Content-Format', 'application/link-format');
-	outgoing.setOption('Location-Path', '/rd/' + id);
-	outgoing.code = 201; // Created
-    },
-
-    /**
-     * Implementation of Section 7
-     */
-    lookup: function(incoming, outgoing) {
-    },
-
-    
+    return ep.id;
 };
 
 /**
- * Basic /.well-known/core functionality
+ * Implementation of Sections 5.3.1 and 5.3.2
  */
-const core = {
-    returnPaths : function(incoming, outgoing) {
+RD.registerSimple = function(incoming, outgoing) {
+    const ep = makeEndpoint(incoming);
+
+    // Handle the old -07 Section 4 functionality with non-empty payload
+    // Also see the mailing list discussion in June 13-21, 2016
+    if (incoming.payload.length != 0) {
+	ep.resources = makeResources(incoming);
+	outgoing.code = 201; // Created
+    } else {
+	outgoing.code = 204; // Changed
+	// triggerCoreQuery(ep);
+    }
+
+    console.log(this);
+    this._registerOrUpdate(ep);
+};
+
+/**
+ * Implementation of Section 5.3 introduction part
+ */
+RD.register = function(incoming, outgoing) {
+    const ep = makeEndpoint(incoming);
+    ep.resources = makeResources(incoming);
+
+    const id = this._registerOrUpdate(ep);
+
+    outgoing.setOption('Content-Format', 'application/link-format');
+    outgoing.setOption('Location-Path', '/rd/' + id);
+    outgoing.code = 201; // Created
+};
+
+/**
+ * Implementation of Section 7
+ */
+RD.lookup = function(incoming, outgoing) {
+    if (outgoing === undefined) {
+	return function(incoming, outgoing) { return 'XXX'; }
     }
 };
+
+/* XXX: Following is very much work in progress and will disappear/transform */
 
 /**
  * Resource paths used by this RD
  */
-const rp = {
+RD.prototype._rp = {
     core: {
 	'rd'           : '</rd>',
 	'rd-lookup-ep' : '</rd-lookup/ep>',
 	'rd-lookup-res': '</rd-lookup/res>',
 	'rd-lookup-d'  : '</rd-lookup/d>',
-    },
-};
-
-const urlRouting = {
-    '.well-known/core': {
-	POST  : rd.registerSimple,  // Sections 5.3.1 and 5.3.2
-	GET   : core.returnPaths,
-    },
-    'rd/': {
-	POST  : rd.update,          // Section 5.4.1
-	DELETE: rd.remove,          // Section 5.4.2
-	GET   : rd.read,            // Section 5.4.3
-	PATCH : rd.patch,           // Section 5.4.4
-    },
-    'rd': {
-	POST  : rd.register,        // Section 5.3
-    },
-    'rd-lookup/ep': {
-	GET   : rd.lookup('ep'),
-    },
-    'rd-lookup/res': {
-	GET   : rd.lookup('res'),
-    },
-    'rd-lookup/d': {
-	GET   : rd.lookup('d'),
-    },
-    'rd-lookup': {
-	GET   : rd.lookup,          // Section 7
     },
 };
 
@@ -239,4 +213,4 @@ const resourceTypes = {
     'core.rd'           : XXX,
 };
 
-exports.handlers = urlRouting;
+module.exports = RD;

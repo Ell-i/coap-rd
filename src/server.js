@@ -1,6 +1,6 @@
 
 const coap = require('coap');
-const rd   = require('./rd.js');
+const RD   = require('./rd.js');
 
 const defaultCoAPport = 5683;
 
@@ -10,10 +10,44 @@ const serverOptions = {
 //  multicastInterface: 'en8',
 };
 
-function handle(path, request, response) {
+/**
+ * Basic /.well-known/core functionality
+ */
+returnPaths = function(incoming, outgoing) {
+};
+
+const urlRouting = {
+    '.well-known/core': {
+	POST  : RD.registerSimple,  // Sections 5.3.1 and 5.3.2
+	GET   : returnPaths,
+    },
+    'rd/': {
+	POST  : RD.update,          // Section 5.4.1
+	DELETE: RD.remove,          // Section 5.4.2
+	GET   : RD.read,            // Section 5.4.3
+	PATCH : RD.patch,           // Section 5.4.4
+    },
+    'rd': {
+	POST  : RD.register,        // Section 5.3
+    },
+    'rd-lookup/ep': {
+	GET   : RD.lookup('ep'),
+    },
+    'rd-lookup/res': {
+	GET   : RD.lookup('res'),
+    },
+    'rd-lookup/d': {
+	GET   : RD.lookup('d'),
+    },
+    'rd-lookup': {
+	GET   : RD.lookup,          // Section 7
+    },
+};
+
+function handle(rd, path, request, response) {
     console.log('CoAP RD server: Serving "/' + path + '"');
 
-    const pathHandler = rd.handlers[path];
+    const pathHandler = urlRouting[path];
 
     if (!pathHandler) {
 	console.log('CoAP RD server: path not found');
@@ -26,14 +60,19 @@ function handle(path, request, response) {
 	response.code = '405'; // Method Not Allowed
 	return;
     }
-    methodHandler(request, response);
+    methodHandler.apply(rd, [request, response]);
     console.log('CoAP RD server: Serving "/' + path + '" done.');
 }
 
+/**
+ * Handle requests
+ *
+ * Note that `this` is bound to the coap server object, not our RD server object
+ */
 function listener(request, response) {
     const path = request.options.filter(o => o.name === 'Uri-Path').map(o => o.value).join('/');
     try {
-	handle(path, request, response);
+	handle(this.rd, path, request, response);
     } catch (err) {
 	console.log("CoAP RD server: exception " + err.stack);
 	throw err;
@@ -42,9 +81,10 @@ function listener(request, response) {
 }
 
 exports.startServer = function(XXX) {
-    const server = coap.createServer(serverOptions, listener);
-    server.listen(defaultCoAPport);
-    return server;
+    this.server = coap.createServer(serverOptions, listener);
+    this.server.rd = new RD();
+    this.server.listen(defaultCoAPport);
+    return this;
 };
 
     
