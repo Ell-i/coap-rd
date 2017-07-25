@@ -124,8 +124,6 @@ const RD = function(options) {
     this._idCounter = 0;
     this._endpoints = {};
     this._options = options || {};
-
-    console.log('CoAP RD: created');
 }
 
 /**
@@ -152,13 +150,14 @@ RD.prototype._registerOrUpdate = function(ep) {
 RD.prototype._triggerCoreQuery = function(ep) {
     const url = Object.assign(
 	{
-	    method: 'GET',
-	    path:   '/.well-known/core',
+	    method:   'GET',
+	    pathname: '/.well-known/core',
+	    path:     '/.well-known/core', // For URI.serialize
 	},
 	ep.con
     );
 
-    console.log('CoAP RD: Makeing a query at ' + URI.serialize(url));
+    console.log('CoAP RD: Making a query at ' + URI.serialize(url));
     const req = coap.request(url);
 
     req.on('response', function(res) {

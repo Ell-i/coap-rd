@@ -84,6 +84,7 @@ exports.startServer = function(XXX) {
     this.server = coap.createServer(serverOptions, listener);
     this.server.rd = new RD();
     this.server.listen(defaultCoAPport);
+    console.log('CoAP RD: listening');
     return this;
 };
 
