@@ -3,6 +3,7 @@ const toArray              = require('stream-to-array');
 const ldJSONstream         = require('jsonld-stream');
 const linkFormatJSONstream = require('./link-format-json-stream');
 const URI                  = require('uri-js');
+const coap                 = require('coap');
 
 const defaultDomain        = 'local';
 const defaultEndpointType  = 'thing';
@@ -87,7 +88,6 @@ function makeEndpoint(incoming) {
 	    family: incoming.rsinfo.family,
 	    host:   incoming.rsinfo.address,
 	    port:   incoming.rsinfo.port,
-	    path:   null,
 	}
     };
 
@@ -123,6 +123,9 @@ const RD = function(options) {
 
     this._idCounter = 0;
     this._endpoints = {};
+    this._options = options || {};
+
+    console.log('CoAP RD: created');
 }
 
 /**
@@ -131,17 +134,44 @@ const RD = function(options) {
 RD.prototype._registerOrUpdate = function(ep) {
     if (this._endpoints[ep.ep]) {
 	Object.assign(this._endpoints[ep.ep], ep);
-	console.log('CoAP RD server: Updated endpoint ' + ep.ep + ": "
+	console.log('CoAP RD: Updated endpoint ' + ep.ep + ": "
 		    + JSON.stringify(this._endpoints[ep.ep]));
     } else {
 	ep.id = this._idCounter++;
 	this._endpoints[ep.ep] = ep;
-	console.log('CoAP RD server: Registered endpoint ' + ep.ep + ": "
+	console.log('CoAP RD: Registered endpoint ' + ep.ep + ": "
 		    + JSON.stringify(ep));
     }
 
     return ep.id;
 };
+
+/**
+ * Trigger a /.well-known/core query to a Endpoint
+ */
+RD.prototype._triggerCoreQuery = function(ep) {
+    const url = Object.assign(
+	{
+	    method: 'GET',
+	    path:   '/.well-known/core',
+	},
+	ep.con
+    );
+
+    console.log('CoAP RD: Makeing a query at ' + URI.serialize(url));
+    const req = coap.request(url);
+
+    req.on('response', function(res) {
+	// Override any old resources
+	ep.resources = makeResources(res);
+    });
+
+    req.on('error', function(err) {
+	throw new Error(err);
+    });
+
+    req.end();
+}
 
 /**
  * Implementation of Sections 5.3.1 and 5.3.2
@@ -156,10 +186,9 @@ RD.registerSimple = function(incoming, outgoing) {
 	outgoing.code = 201; // Created
     } else {
 	outgoing.code = 204; // Changed
-	// triggerCoreQuery(ep);
+	this._triggerCoreQuery(ep);
     }
 
-    console.log(this);
     this._registerOrUpdate(ep);
 };
 

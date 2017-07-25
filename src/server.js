@@ -45,7 +45,7 @@ const urlRouting = {
 };
 
 function handle(rd, path, request, response) {
-    console.log('CoAP RD server: Serving "/' + path + '"');
+    console.log('CoAP RD: Serving "/' + path + '"');
 
     const pathHandler = urlRouting[path];
 
@@ -61,7 +61,7 @@ function handle(rd, path, request, response) {
 	return;
     }
     methodHandler.apply(rd, [request, response]);
-    console.log('CoAP RD server: Serving "/' + path + '" done.');
+    console.log('CoAP RD: Serving "/' + path + '" done.');
 }
 
 /**
