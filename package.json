@@ -12,6 +12,7 @@
   "dependencies": {
     "coap": "^0.21.0",
     "jsonld-stream": "^1.0.3",
-    "stream-to-array": "^2.3.0"
+    "stream-to-array": "^2.3.0",
+    "uri-js": "^3.0.2"
   }
 }

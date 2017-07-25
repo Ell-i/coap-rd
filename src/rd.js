@@ -1,11 +1,12 @@
 
-const toArray   = require('stream-to-array');
-const ldJSONstream = require('jsonld-stream');
+const toArray              = require('stream-to-array');
+const ldJSONstream         = require('jsonld-stream');
 const linkFormatJSONstream = require('./link-format-json-stream');
+const URI                  = require('uri-js');
 
-const defaultDomain       = 'local';
-const defaultEndpointType = 'thing';
-const defaultLifetime     = 86400;
+const defaultDomain        = 'local';
+const defaultEndpointType  = 'thing';
+const defaultLifetime      = 86400;
 
 /**
  * Validate that a string is non-empty and less than 63 characters long
@@ -55,17 +56,43 @@ const defaultParameters =
 function makeEndpoint(incoming) {
     // Convert CoAP options into { name: value } pairs
     const parameters = incoming.options
-	  .filter(o => o.name === 'Uri-Query')
-	  .reduce(function(object, option) {
-	      // Split each option and destructure the resulting array
+
+	  .filter(option => option.name === 'Uri-Query')
+
+          // Convert query options into { name: value } pairs
+	  .map(function(option) {
+	      // Split the option and destructure the resulting array
 	      [name, ...values] = option.value.toString('ASCII').split('=');
-	      // Create the wanted { name: value } pairs
-	      Object.assign(object, { [name]: values.join('=') });
+	      return { name: name, value: values.join('=') };
+	  })
+
+          // Convert con parameters (if any) into structured ones
+	  .map(function(option) {
+	      if (option.name === 'con') {
+		  return { [option.name]: URI.parse(option.value) };
+	      }
+	      return option;
+	  })
+
+          // Convert the array of { name: value } pairs into an object
+	  .reduce(function(object, option) {
+	      object[option.name] = option.value;
 	      return object;
 	  }, {});
 
-    // Return a new object from defaultParameters, overwritten by parameters
-    return Object.assign({}, defaultParameters, parameters);
+    // Create a default context object
+    const endpoint = {
+	con: {
+	    scheme: 'coap',
+	    family: incoming.rsinfo.family,
+	    host:   incoming.rsinfo.address,
+	    port:   incoming.rsinfo.port,
+	    path:   null,
+	}
+    };
+
+    // Assing the endpoint from defaultParameters, overwritten by parameters
+    return Object.assign(endpoint, defaultParameters, parameters);
 }
 
 /**
@@ -96,12 +123,14 @@ const rd = {
 
     _registerOrUpdate: function(ep) {
 	if (rd._endpoints[ep.ep]) {
-	    console.log('CoAP RD server: Updating endpoint ' + ep.ep);
 	    Object.assign(rd._endpoints[ep.ep], ep);
+	    console.log('CoAP RD server: Updated endpoint ' + ep.ep + ": "
+			+ JSON.stringify(rd._endpoints[ep.ep]));
 	} else {
-	    console.log('CoAP RD server: Registering endpoint ' + ep.ep);
 	    ep.id = rd._idCounter++;
 	    rd._endpoints[ep.ep] = ep;
+	    console.log('CoAP RD server: Registered endpoint ' + ep.ep + ": "
+			+ JSON.stringify(ep));
 	}
 
 	return ep.id;
