@@ -99,7 +99,7 @@ function makeEndpoint(incoming) {
  * Create an Array of EP resources from a payload stream
  */
 async function makeResources(incoming) {
-    const contentFormat = incoming.options.filter(o => o.name === 'Content-Format');
+    const contentFormat = incoming.options.filter(o => o.name === 'Content-Format')[0].value.toString();
     switch (contentFormat) {
     case 'application/link-format':
 	return (await toArray(incoming.pipe(linkFormatJSONstream)));
