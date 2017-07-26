@@ -4,6 +4,7 @@ const ldJSONstream         = require('jsonld-stream');
 const linkFormatJSONstream = require('./link-format-json-stream');
 const URI                  = require('uri-js');
 const coap                 = require('coap');
+const crypto               = require('crypto');
 
 const defaultDomain        = 'local';
 const defaultEndpointType  = 'thing';
@@ -125,11 +126,21 @@ async function makeResources(incoming) {
 }
 
 /**
+ * Create an identifier for an Endpoint
+ */
+function makeEpIdentifier(ep) {
+    return crypto
+	.createHash('sha256')
+	.update(ep.ep, 'ascii')
+	.digest('hex')
+	.slice(0, 16);
+}
+
+/**
  * The actual resource directory
  */
 class RD {
     constructor(options) {
-	this._idCounter = 0;
 	this._endpoints = {};
 	this._options = options || {};
     }
@@ -142,7 +153,7 @@ class RD {
 	    Object.assign(this._endpoints[ep.ep], ep);
 	    console.log('CoAP RD: Updated endpoint ' + ep.ep);
 	} else {
-	    ep.id = this._idCounter++;
+	    ep.id = makeEpIdentifier(ep)
 	    this._endpoints[ep.ep] = ep;
 	    console.log('CoAP RD: Registered endpoint ' + ep.ep);
 	}
