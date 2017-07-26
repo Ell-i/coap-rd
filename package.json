@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/Ell-i/coap-rd.git"
   },
-  "main": "index.js",
+  "main": "coap-rd.js",
   "author": {
     "name": "Pekka Nikander",
     "email": "pekka.nikander@iki.fi"
