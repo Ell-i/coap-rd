@@ -50,13 +50,13 @@ function handle(rd, path, request, response) {
     const pathHandler = urlRouting[path];
 
     if (!pathHandler) {
-	console.log('CoAP RD server: path not found');
+	console.log('CoAP RD: Path not found');
 	response.code = '404'; // Not Found
 	return;
     }
     const methodHandler = pathHandler[request.method];
     if (!methodHandler) {
-	console.log('CoAP RD server: method not found');
+	console.log('CoAP RD: Method not found');
 	response.code = '405'; // Method Not Allowed
 	return;
     }

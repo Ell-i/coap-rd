@@ -192,16 +192,17 @@ RD.registerSimple = function(incoming, outgoing) {
     if (incoming.payload.length != 0) {
 	const promise = makeResources(incoming);
 	outgoing.code = 201; // Created
-	promise.then(function (value) {
+	promise.then(value => {
 	    ep.resources = value;
 	    console.log("Resources = " + JSON.stringify(ep.resources));
+	    this._registerOrUpdate(ep);
 	});
     } else {
+	this._registerOrUpdate(ep);
 	outgoing.code = 204; // Changed
 	this._triggerCoreQuery(ep);
     }
 
-    this._registerOrUpdate(ep);
 };
 
 /**
