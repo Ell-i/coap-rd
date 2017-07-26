@@ -147,7 +147,7 @@ class RD {
 	    console.log('CoAP RD: Registered endpoint ' + ep.ep);
 	}
 
-	return ep.id;
+	return ep.id.toString();
     };
 
     /**
@@ -210,18 +210,18 @@ RD.registerSimple = function(incoming, outgoing) {
 RD.register = function(incoming, outgoing) {
     const ep = makeEndpoint(incoming);
 
-    const promise = makeResources(incoming);
-    promise.then(function (value) {
-	ep.resources = value;
-	console.log("Resources = " + JSON.stringify(ep.resources));
+    const id = this._registerOrUpdate(ep);
 
-	const id = this._registerOrUpdate(ep);
+    makeResources(incoming)
+	.then(value => {
+	    ep.resources = value;
+	    console.log("Resources = " + JSON.stringify(ep.resources));
 
-	outgoing.setOption('Content-Format', 'application/link-format');
-	outgoing.setOption('Location-Path', 'rd');
-	outgoing.setOption('Location-Path', id);
-	outgoing.code = 201; // Created
-    });
+	    this._registerOrUpdate(ep);
+	});
+
+    outgoing.setOption('Location-Path', ['rd', id]);
+    outgoing.code = 201; // Created
 };
 
 /**
