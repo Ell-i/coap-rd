@@ -153,12 +153,12 @@ class RD {
 	    Object.assign(this._endpoints[ep.ep], ep);
 	    console.log('CoAP RD: Updated endpoint ' + ep.ep);
 	} else {
-	    ep.id = makeEpIdentifier(ep)
+	    ep.id = makeEpIdentifier(ep);
 	    this._endpoints[ep.ep] = ep;
 	    console.log('CoAP RD: Registered endpoint ' + ep.ep);
 	}
 
-	return ep.id.toString();
+	return this._endpoints[ep.ep].id.toString();
     };
 
     /**
