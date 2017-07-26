@@ -101,7 +101,12 @@ function makeEndpoint(incoming) {
  * XXX: Convert to return a stream, so that we can handle observed cores.
  */
 async function makeResources(incoming) {
-    const contentFormat = incoming.options.filter(o => o.name === 'Content-Format')[0].value.toString();
+    const contentFormats = incoming.options.filter(o => o.name === 'Content-Format');
+    if (!contentFormats[0]) {
+	return new Promise(() => undefined);
+    }
+    const contentFormat = contentFormats[0].value.toString();
+
     try {
 	switch (contentFormat) {
 	case 'application/link-format':
