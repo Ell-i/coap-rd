@@ -209,14 +209,14 @@ RD.register = function(incoming, outgoing) {
     promise.then(function (value) {
 	ep.resources = value;
 	console.log("Resources = " + JSON.stringify(ep.resources));
+
+	const id = this._registerOrUpdate(ep);
+
+	outgoing.setOption('Content-Format', 'application/link-format');
+	outgoing.setOption('Location-Path', 'rd');
+	outgoing.setOption('Location-Path', id);
+	outgoing.code = 201; // Created
     });
-
-    const id = this._registerOrUpdate(ep);
-
-    outgoing.setOption('Content-Format', 'application/link-format');
-    outgoing.setOption('Location-Path', 'rd');
-    outgoing.setOption('Location-Path', id);
-    outgoing.code = 201; // Created
 };
 
 /**
