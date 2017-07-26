@@ -1,10 +1,12 @@
 
+const EventEmitter         = require('events');
+const crypto               = require('crypto');
+
 const toArray              = require('stream-to-array');
 const ldJSONstream         = require('jsonld-stream');
 const linkFormatJSONstream = require('./link-format-json-stream');
 const URI                  = require('uri-js');
 const coap                 = require('coap');
-const crypto               = require('crypto');
 
 const defaultDomain        = 'local';
 const defaultEndpointType  = 'thing';
@@ -132,6 +134,7 @@ function makeEpIdentifier(ep) {
     return crypto
 	.createHash('sha256')
 	.update(ep.ep, 'ascii')
+	.update(ep.d, 'ascii')
 	.digest('hex')
 	.slice(0, 16);
 }
@@ -139,10 +142,18 @@ function makeEpIdentifier(ep) {
 /**
  * The actual resource directory
  */
-class RD {
+class RD extends EventEmitter {
     constructor(options) {
+	super();
 	this._endpoints = {};
-	this._options = options || {};
+	this._options   = options = options || {};
+
+	// If the domain is set in the options, make that the default
+	// when handling incoming resources
+	if (options.domain) {
+	    console.log('CoAP RD: Setting default domain to "' + options.domain + '".');
+	    defaultParameters.d = options.domain;
+	}
     }
 
     /**
@@ -151,10 +162,12 @@ class RD {
     _registerOrUpdate(ep) {
 	if (this._endpoints[ep.ep]) {
 	    Object.assign(this._endpoints[ep.ep], ep);
+	    this.emit('update', ep);
 	    console.log('CoAP RD: Updated endpoint ' + ep.ep);
 	} else {
 	    ep.id = makeEpIdentifier(ep);
 	    this._endpoints[ep.ep] = ep;
+	    this.emit('register', ep);
 	    console.log('CoAP RD: Registered endpoint ' + ep.ep);
 	}
 
@@ -190,60 +203,59 @@ class RD {
 
 	req.end();
     }
-}
 
-/**
- * Implementation of Sections 5.3.1 and 5.3.2
- */
-RD.registerSimple = function(incoming, outgoing) {
-    const ep = makeEndpoint(incoming);
+    /**
+     * Implementation of Sections 5.3.1 and 5.3.2
+     */
+    registerSimple(incoming, outgoing) {
+	const ep = makeEndpoint(incoming);
 
-    // Handle the old -07 Section 4 functionality with non-empty payload
-    // Also see the mailing list discussion in June 13-21, 2016
-    if (incoming.payload.length != 0) {
-	const promise = makeResources(incoming);
+	// Handle the old -07 Section 4 functionality with non-empty payload
+	// Also see the mailing list discussion in June 13-21, 2016
+	if (incoming.payload.length != 0) {
+	    const promise = makeResources(incoming);
+	    outgoing.code = 201; // Created
+	    promise.then(value => {
+		ep.resources = value;
+		console.log("Resources = " + JSON.stringify(ep.resources));
+		this._registerOrUpdate(ep);
+	    });
+	} else {
+	    this._registerOrUpdate(ep);
+	    outgoing.code = 204; // Changed
+	    this._triggerCoreQuery(ep);
+	}
+    }
+
+    /**
+     * Implementation of Section 5.3 introduction part
+     */
+    register(incoming, outgoing) {
+	const ep = makeEndpoint(incoming);
+
+	const id = this._registerOrUpdate(ep);
+
+	makeResources(incoming)
+	    .then(value => {
+		ep.resources = value;
+		console.log("Resources = " + JSON.stringify(ep.resources));
+
+		this._registerOrUpdate(ep);
+	    });
+
+	outgoing.setOption('Location-Path', ['rd', id]);
 	outgoing.code = 201; // Created
-	promise.then(value => {
-	    ep.resources = value;
-	    console.log("Resources = " + JSON.stringify(ep.resources));
-	    this._registerOrUpdate(ep);
-	});
-    } else {
-	this._registerOrUpdate(ep);
-	outgoing.code = 204; // Changed
-	this._triggerCoreQuery(ep);
     }
 
-};
-
-/**
- * Implementation of Section 5.3 introduction part
- */
-RD.register = function(incoming, outgoing) {
-    const ep = makeEndpoint(incoming);
-
-    const id = this._registerOrUpdate(ep);
-
-    makeResources(incoming)
-	.then(value => {
-	    ep.resources = value;
-	    console.log("Resources = " + JSON.stringify(ep.resources));
-
-	    this._registerOrUpdate(ep);
-	});
-
-    outgoing.setOption('Location-Path', ['rd', id]);
-    outgoing.code = 201; // Created
-};
-
-/**
- * Implementation of Section 7
- */
-RD.lookup = function(incoming, outgoing) {
-    if (outgoing === undefined) {
-	return function(incoming, outgoing) { return 'XXX'; }
-    }
-};
+    /**
+     * Implementation of Section 7
+     */
+    lookup(incoming, outgoing) {
+	if (outgoing === undefined) {
+	    return function(incoming, outgoing) { return 'XXX'; }
+	}
+    };
+}
 
 /* XXX: Following is very much work in progress and will disappear/transform */
 

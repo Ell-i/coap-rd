@@ -1,46 +1,45 @@
 
-const coap = require('coap');
-const RD   = require('./rd.js');
+const coap         = require('coap');
+const RD           = require('./rd.js');
 
 const defaultCoAPport = 5683;
 
 const serverOptions = {
-    type:               'udp6',
-//  multicastAddress:   'FF02::1',
-//  multicastInterface: 'en8',
+    type: 'udp6',
 };
 
 /**
  * Basic /.well-known/core functionality
  */
 returnPaths = function(incoming, outgoing) {
+    // XXX TBD
 };
 
 const urlRouting = {
     '.well-known/core': {
-	POST  : RD.registerSimple,  // Sections 5.3.1 and 5.3.2
+	POST  : RD.prototype.registerSimple,  // Sections 5.3.1 and 5.3.2
 	GET   : returnPaths,
     },
     'rd/': {
-	POST  : RD.update,          // Section 5.4.1
-	DELETE: RD.remove,          // Section 5.4.2
-	GET   : RD.read,            // Section 5.4.3
-	PATCH : RD.patch,           // Section 5.4.4
+	POST  : RD.prototype.update,          // Section 5.4.1
+	DELETE: RD.prototype.remove,          // Section 5.4.2
+	GET   : RD.prototype.read,            // Section 5.4.3
+	PATCH : RD.prototype.patch,           // Section 5.4.4
     },
     'rd': {
-	POST  : RD.register,        // Section 5.3
+	POST  : RD.prototype.register,        // Section 5.3
     },
     'rd-lookup/ep': {
-	GET   : RD.lookup('ep'),
+	GET   : RD.prototype.lookup('ep'),
     },
     'rd-lookup/res': {
-	GET   : RD.lookup('res'),
+	GET   : RD.prototype.lookup('res'),
     },
     'rd-lookup/d': {
-	GET   : RD.lookup('d'),
+	GET   : RD.prototype.lookup('d'),
     },
     'rd-lookup': {
-	GET   : RD.lookup,          // Section 7
+	GET   : RD.prototype.lookup,          // Section 7
     },
 };
 
@@ -80,12 +79,24 @@ function listener(request, response) {
     response.end();
 }
 
-exports.startServer = function(XXX) {
-    this.server = coap.createServer(serverOptions, listener);
-    this.server.rd = new RD();  // Since in `listener` `this` is the CoAP server, not us
-    this.server.listen(defaultCoAPport);
-    console.log('CoAP RD: listening');
-    return this;
+/**
+ * Resource Directory server class
+ */
+class RDServer extends RD {
+    constructor(options) {
+	options = options || {};
+	super(options);
+
+	const serverOpts = Object.assign({}, serverOptions, options.coap);
+	this.server = coap.createServer(serverOpts, listener);
+	// In `listener` function, `this` is the CoAP server, not us.
+	// Hence, we have to store the rd in server so that it is
+	// available in the `listener` function.
+	this.server.rd = this;
+	this.server.listen(defaultCoAPport);
+	console.log('CoAP RD: listening.');
+	return this;
+    }
 };
 
-    
+module.exports = RDServer;

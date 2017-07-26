@@ -3,6 +3,11 @@ process.on('unhandledRejection', (reason, p) => {
     console.log('Unhandled Rejection at:', p, 'reason:', reason);
 });
 
-const rd = require('./src/server.js');
+const RD = require('./src/server.js');
 
-rd.startServer();
+// Start the server when start from the command line
+if (typeof require != 'undefined' && require.main === module) {
+    new RD(/* XXX: Add command line options here */);
+}
+
+module.exports = RD;
