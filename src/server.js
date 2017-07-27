@@ -46,7 +46,16 @@ const urlRouting = {
 function handle(rd, path, request, response) {
     console.log('CoAP RD: Serving "/' + path + '"');
 
-    const pathHandler = urlRouting[path];
+    var pathHandler = urlRouting[path];
+    if (!pathHandler) {
+	// Attempt prefix matching
+	const prefix = Object.keys(urlRouting)
+	      .filter(name => name.endsWith('/'))
+	      .find(name => path.startsWith(name));
+	if (prefix) {
+	    pathHandler = urlRouting[prefix];
+	}
+    }
 
     if (!pathHandler) {
 	console.log('CoAP RD: Path not found');
