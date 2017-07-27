@@ -160,18 +160,18 @@ class RD extends EventEmitter {
      * Register or update an endpoint
      */
     _registerOrUpdate(ep) {
-	if (this._endpoints[ep.ep]) {
-	    Object.assign(this._endpoints[ep.ep], ep);
+	if (ep.id && this._endpoints[ep.id]) {
+	    Object.assign(this._endpoints[ep.id], ep);
 	    this.emit('update', ep);
 	    console.log('CoAP RD: Updated endpoint ' + ep.ep);
 	} else {
 	    ep.id = makeEpIdentifier(ep);
-	    this._endpoints[ep.ep] = ep;
+	    this._endpoints[ep.id] = ep;
 	    this.emit('register', ep);
 	    console.log('CoAP RD: Registered endpoint ' + ep.ep);
 	}
 
-	return this._endpoints[ep.ep].id.toString();
+	return this._endpoints[ep.id].id.toString();
     };
 
     /**
@@ -248,16 +248,16 @@ class RD extends EventEmitter {
      */
     update(incoming, outgoing) {
 	// The Endpoint name is in the second Uri-Path option
-	const epnameBuf = incoming.options.filter(option => option.name === 'Uri-Path')[1];
-	if (!epnameBuf) {
+	const epidBuf = incoming.options.filter(option => option.name === 'Uri-Path')[1];
+	if (!epidBuf) {
 	    console.log('CoAP RD: Update: Cannot determine the Endpoint name.');
 	    outgoing.code = 400;
 	    return;
 	}
-	const epname = epnameBuf.value.toString();
+	const epid = epidBuf.value.toString();
 
-	if (!this._endpoints[epname]) {
-	    console.log('CoAP RD: Update: Attempt to update an unregisted EP "' + epname + '".');
+	if (!this._endpoints[epid]) {
+	    console.log('CoAP RD: Update: Attempt to update an unregisted EP "' + epid + '".');
 	    outgoing.code = 404;
 	    return;
 	}
@@ -269,7 +269,7 @@ class RD extends EventEmitter {
 	    return;
 	}
 
-	ep.ep = epname;
+	ep.id = epid;
 
 	makeResources(incoming)
 	    .then(value => {
