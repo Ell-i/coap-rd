@@ -193,7 +193,6 @@ class RD extends EventEmitter {
 	    makeResources(res).then((value) => {
 		ep.resources = value;
 		this._registerOrUpdate(ep);
-		console.log("Resources = " + JSON.stringify(ep.resources));
 	    });
 	});
 
@@ -217,7 +216,6 @@ class RD extends EventEmitter {
 	    outgoing.code = 201; // Created
 	    promise.then(value => {
 		ep.resources = value;
-		console.log("Resources = " + JSON.stringify(ep.resources));
 		this._registerOrUpdate(ep);
 	    });
 	} else {
@@ -238,13 +236,48 @@ class RD extends EventEmitter {
 	makeResources(incoming)
 	    .then(value => {
 		ep.resources = value;
-		console.log("Resources = " + JSON.stringify(ep.resources));
-
 		this._registerOrUpdate(ep);
 	    });
 
 	outgoing.setOption('Location-Path', ['rd', id]);
 	outgoing.code = 201; // Created
+    }
+
+    /**
+     * Implementation of Section 5.4.1, also for PUT
+     */
+    update(incoming, outgoing) {
+	// The Endpoint name is in the second Uri-Path option
+	const epnameBuf = incoming.options.filter(option => option.name === 'Uri-Path')[1];
+	if (!epnameBuf) {
+	    console.log('CoAP RD: Update: Cannot determine the Endpoint name.');
+	    outgoing.code = 400;
+	    return;
+	}
+	const epname = epnameBuf.value.toString();
+
+	if (!this._endpoints[epname]) {
+	    console.log('CoAP RD: Update: Attempt to update an unregisted EP "' + epname + '".');
+	    outgoing.code = 404;
+	    return;
+	}
+
+	const ep = makeEndpoint(incoming);
+	if (ep.ep) {
+	    console.log('CoAP RD: Update: Illegal ep query included in the update.');
+	    outgoing.code = 400;
+	    return;
+	}
+
+	ep.ep = epname;
+
+	makeResources(incoming)
+	    .then(value => {
+		ep.resources = value;
+		this._registerOrUpdate(ep);
+	    });
+
+	outgoing.code = 204; // Changed
     }
 
     /**

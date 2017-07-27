@@ -22,6 +22,7 @@ const urlRouting = {
     },
     'rd/': {
 	POST  : RD.prototype.update,          // Section 5.4.1
+	PUT   : RD.prototype.update,          // Section 5.4.1
 	DELETE: RD.prototype.remove,          // Section 5.4.2
 	GET   : RD.prototype.read,            // Section 5.4.3
 	PATCH : RD.prototype.patch,           // Section 5.4.4
