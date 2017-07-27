@@ -188,11 +188,11 @@ class RD extends EventEmitter {
 
 	const req = coap.request(url);
 
-	req.on('response', function(res) {
+	req.on('response', (res) => {
 	    // Override any old resources
-	    const promise = makeResources(res);
-	    promise.then(function (value) {
+	    makeResources(res).then((value) => {
 		ep.resources = value;
+		this._registerOrUpdate(ep);
 		console.log("Resources = " + JSON.stringify(ep.resources));
 	    });
 	});
